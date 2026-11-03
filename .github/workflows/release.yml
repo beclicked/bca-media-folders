@@ -1,0 +1,41 @@
+name: Release
+
+# Publier une version : passer la version dans bca-media-folders.php (en-tête + BCAMF_VERSION),
+# commit, puis : git tag v1.0.1 && git push origin main --tags
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Vérifier que le tag correspond à la version du plugin
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          HEADER=$(grep -m1 -E '^\s*\*\s*Version:' bca-media-folders.php | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')
+          CONST=$(grep -m1 "define( 'BCAMF_VERSION'" bca-media-folders.php | sed -E "s/.*'BCAMF_VERSION', '([^']+)'.*/\1/")
+          echo "Tag: $TAG | En-tête: $HEADER | Constante: $CONST"
+          if [ "$TAG" != "$HEADER" ] || [ "$TAG" != "$CONST" ]; then
+            echo "::error::Le tag v$TAG ne correspond pas à la version du plugin."
+            exit 1
+          fi
+
+      - name: Construire le zip
+        run: |
+          mkdir -p /tmp/build/bca-media-folders
+          rsync -a --exclude-from=.distignore ./ /tmp/build/bca-media-folders/
+          cd /tmp/build && zip -rq "$GITHUB_WORKSPACE/bca-media-folders.zip" bca-media-folders
+
+      - name: Publier la release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: bca-media-folders.zip
+          generate_release_notes: true
