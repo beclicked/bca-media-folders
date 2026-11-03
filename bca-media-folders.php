@@ -3,7 +3,7 @@
  * Plugin Name:       BCA Media Folders
  * Plugin URI:        https://beclicked.agency
  * Description:       Rangez votre médiathèque dans des dossiers, simplement. Aucun fichier n'est déplacé sur le serveur, aucun lien n'est cassé.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            Be Clicked Agency
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BCAMF_VERSION', '1.0.0' );
+define( 'BCAMF_VERSION', '1.0.1' );
 define( 'BCAMF_FILE', __FILE__ );
 define( 'BCAMF_DIR', plugin_dir_path( __FILE__ ) );
 define( 'BCAMF_URL', plugin_dir_url( __FILE__ ) );

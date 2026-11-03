@@ -788,7 +788,15 @@
 
 		// Compteurs à jour après un upload, une suppression ou un changement de dossier depuis le détail d'un média.
 		var refreshSoon = debounce( refresh, 400 );
-		$( document ).on( 'bcamf:uploaded', refreshSoon );
+		// Après un upload : compteurs à jour et, si un dossier est ouvert, la vue est rechargée
+		// pour afficher les fichiers qui viennent d'y être rangés.
+		var afterUpload = debounce( function () {
+			refresh();
+			if ( L.mode === 'grid' && state.current !== 0 ) {
+				applyGridFilter();
+			}
+		}, 600 );
+		$( document ).on( 'bcamf:uploaded', afterUpload );
 		$( document ).ajaxComplete( function ( e, xhr, settings ) {
 			var data = settings && settings.data ? String( settings.data ) : '';
 			if ( data.indexOf( 'action=save-attachment-compat' ) > -1 || data.indexOf( 'action=delete-post' ) > -1 ) {

@@ -302,6 +302,37 @@ final class BCAMF_Folders {
 		return ( is_wp_error( $ids ) || empty( $ids ) ) ? 0 : (int) $ids[0];
 	}
 
+	/**
+	 * Dossier ouvert par l'utilisateur, mémorisé côté serveur pour les uploads.
+	 * Sert de solution de repli quand le navigateur n'a pas pu transmettre le dossier.
+	 */
+	const UPLOAD_META = 'bcamf_upload_folder';
+	const UPLOAD_TTL  = 2 * HOUR_IN_SECONDS;
+
+	public static function set_upload_folder_for_user( int $folder ): void {
+		$folder = ( $folder > 0 && self::exists( $folder ) ) ? $folder : 0;
+		update_user_meta(
+			get_current_user_id(),
+			self::UPLOAD_META,
+			array(
+				'id'   => $folder,
+				'time' => time(),
+			)
+		);
+	}
+
+	public static function upload_folder_for_user(): int {
+		$data = get_user_meta( get_current_user_id(), self::UPLOAD_META, true );
+		if ( ! is_array( $data ) || empty( $data['id'] ) || empty( $data['time'] ) ) {
+			return 0;
+		}
+		if ( time() - (int) $data['time'] > self::UPLOAD_TTL ) {
+			return 0;
+		}
+		$folder = (int) $data['id'];
+		return self::exists( $folder ) ? $folder : 0;
+	}
+
 	private static function name_taken( string $name, int $parent, int $exclude = 0 ): bool {
 		foreach ( self::get_all() as $folder ) {
 			if ( $folder['parent'] === $parent && $folder['id'] !== $exclude && 0 === strcasecmp( $folder['name'], $name ) ) {

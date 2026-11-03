@@ -37,9 +37,28 @@
 	 * de WordPress 7.1+ (traitement des images dans le navigateur, envoi par l'API REST)
 	 * le lit dès l'ajout des fichiers, avant l'étape BeforeUpload.
 	 */
+	var syncTimer = null;
+	var lastSynced = null;
+
+	// Le serveur mémorise aussi le dossier ouvert : si une autre extension remplace
+	// l'uploader de WordPress et que le paramètre se perd, le fichier est quand même rangé.
+	function syncServer() {
+		if ( ! wp.apiFetch || lastSynced === B.currentFolder ) {
+			return;
+		}
+		clearTimeout( syncTimer );
+		syncTimer = setTimeout( function () {
+			var folder = B.currentFolder;
+			wp.apiFetch( { path: '/bcamf/v1/current', method: 'POST', data: { folder: folder } } ).then( function () {
+				lastSynced = folder;
+			}, function () {} );
+		}, 300 );
+	}
+
 	B.setFolder = function ( id ) {
 		B.currentFolder = id > 0 ? id : 0;
 		B.uploaders.forEach( writeParam );
+		syncServer();
 	};
 
 	if ( wp.Uploader && wp.Uploader.prototype ) {
@@ -67,6 +86,13 @@
 				$( document ).trigger( 'bcamf:uploaded' );
 			} );
 		};
+	}
+
+	// Fin d'une série d'uploads, quel que soit l'uploader utilisé (WordPress vide alors sa file d'attente).
+	if ( wp.Uploader && wp.Uploader.queue && typeof wp.Uploader.queue.on === 'function' ) {
+		wp.Uploader.queue.on( 'reset', function () {
+			$( document ).trigger( 'bcamf:uploaded' );
+		} );
 	}
 
 	// Upload par l'API REST (WordPress 7.1+) : rafraîchir les compteurs une fois le média créé.

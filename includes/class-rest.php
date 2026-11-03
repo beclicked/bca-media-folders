@@ -73,6 +73,24 @@ final class BCAMF_Rest {
 
 		register_rest_route(
 			self::NS,
+			'/current',
+			array(
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( __CLASS__, 'current' ),
+					'permission_callback' => array( __CLASS__, 'can' ),
+					'args'                => array(
+						'folder' => array(
+							'type'    => 'integer',
+							'default' => 0,
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
 			'/assign',
 			array(
 				array(
@@ -131,6 +149,14 @@ final class BCAMF_Rest {
 	public static function delete( WP_REST_Request $request ) {
 		$result = BCAMF_Folders::delete( (int) $request['id'] );
 		return is_wp_error( $result ) ? $result : self::respond();
+	}
+
+	/**
+	 * Mémorise le dossier ouvert, pour les uploads dont le navigateur n'a pas transmis le dossier.
+	 */
+	public static function current( WP_REST_Request $request ) {
+		BCAMF_Folders::set_upload_folder_for_user( (int) $request['folder'] );
+		return rest_ensure_response( array( 'folder' => BCAMF_Folders::upload_folder_for_user() ) );
 	}
 
 	public static function assign( WP_REST_Request $request ) {

@@ -159,12 +159,24 @@ final class BCAMF_Admin {
 	 * Le script ajoute bcamf_folder aux paramètres de chaque upload.
 	 */
 	public static function assign_on_upload( int $post_id ): void {
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce vérifié par async-upload.php.
-		if ( ! isset( $_REQUEST['bcamf_folder'] ) || ! BCAMF_Folders::user_can() ) {
+		global $pagenow;
+
+		if ( ! BCAMF_Folders::user_can() ) {
 			return;
 		}
-		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$folder = (int) $_REQUEST['bcamf_folder'];
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- nonce vérifié par async-upload.php.
+		if ( isset( $_REQUEST['bcamf_folder'] ) ) {
+			// Paramètre envoyé par le navigateur : il fait foi.
+			$folder = (int) $_REQUEST['bcamf_folder']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		} elseif ( 'async-upload.php' === $pagenow ) {
+			// Paramètre absent (une autre extension a remplacé l'uploader de WordPress) :
+			// on utilise le dossier que l'utilisateur a ouvert en dernier dans la médiathèque.
+			$folder = BCAMF_Folders::upload_folder_for_user();
+		} else {
+			return;
+		}
+
 		if ( $folder > 0 && BCAMF_Folders::exists( $folder ) ) {
 			wp_set_object_terms( $post_id, array( $folder ), BCAMF_TAXONOMY, false );
 		}
