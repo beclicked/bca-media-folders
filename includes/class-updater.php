@@ -23,7 +23,8 @@ final class BCAMF_Updater {
 	const HOMEPAGE   = 'https://beclicked.agency/bca-media-folders/';
 	const ASSET_NAME = 'bca-media-folders.zip';
 	const CACHE_KEY  = 'bcamf_release';
-	const CACHE_TTL  = 6 * HOUR_IN_SECONDS;
+	const CACHE_TTL  = HOUR_IN_SECONDS;
+	const FAIL_TTL   = 15 * MINUTE_IN_SECONDS;
 
 	public static function init(): void {
 		add_filter( 'update_plugins_github.com', array( __CLASS__, 'check' ), 10, 4 );
@@ -55,6 +56,8 @@ final class BCAMF_Updater {
 		// « Vérifier à nouveau » (Tableau de bord > Mises à jour) ignore le cache.
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$forced = is_admin() && isset( $_GET['force-check'] ) && current_user_can( 'update_plugins' );
+		// Ouvrir Tableau de bord > Mises à jour interroge aussi le dépôt en direct.
+		$forced = $forced || doing_action( 'load-update-core.php' );
 
 		$cached = $forced ? false : get_site_transient( self::CACHE_KEY );
 		if ( is_array( $cached ) ) {
@@ -71,13 +74,13 @@ final class BCAMF_Updater {
 
 		if ( is_wp_error( $response ) || 200 !== (int) wp_remote_retrieve_response_code( $response ) ) {
 			// Échec mémorisé une heure pour ne pas interroger GitHub à chaque page.
-			set_site_transient( self::CACHE_KEY, array(), HOUR_IN_SECONDS );
+			set_site_transient( self::CACHE_KEY, array(), self::FAIL_TTL );
 			return null;
 		}
 
 		$body = json_decode( wp_remote_retrieve_body( $response ), true );
 		if ( ! is_array( $body ) || empty( $body['tag_name'] ) ) {
-			set_site_transient( self::CACHE_KEY, array(), HOUR_IN_SECONDS );
+			set_site_transient( self::CACHE_KEY, array(), self::FAIL_TTL );
 			return null;
 		}
 
