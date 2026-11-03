@@ -114,6 +114,28 @@
 		} );
 	}
 
+	/**
+	 * WordPress n'affiche les fichiers en cours d'envoi que si la requête de la médiathèque
+	 * ne contient aucun paramètre inconnu. Avec un filtre de dossier actif, ce suivi est
+	 * coupé : on rebranche la vue sur la file d'envoi pour garder les vignettes de progression.
+	 * Un fichier envoyé pendant qu'un dossier est ouvert est rangé dans ce dossier,
+	 * il a donc sa place dans la vue.
+	 */
+	B.observeUploads = function ( collection ) {
+		if ( ! collection || collection.__bcamfObserved || ! wp.Uploader || ! wp.Uploader.queue || typeof collection.observe !== 'function' ) {
+			return;
+		}
+		collection.__bcamfObserved = true;
+		collection.observe( wp.Uploader.queue );
+	};
+
+	// Nouvelle requête au serveur, sans passer par le cache (un média a pu changer de dossier).
+	B.freshQuery = function ( collection ) {
+		if ( collection && typeof collection._requery === 'function' && collection.props && collection.props.get( 'query' ) ) {
+			collection._requery( true );
+		}
+	};
+
 	/* 2. Filtre « Dossier » dans la fenêtre de sélection ------------------- */
 
 	var esc = ( typeof _ !== 'undefined' && _.escape ) ? _.escape : function ( s ) {
@@ -151,8 +173,10 @@
 			}
 			var value = filter.props.bcamf_folder;
 			B.setFolder( value );
-			// bcamf_ts force une nouvelle requête (évite un résultat mis en cache périmé).
-			this.model.set( { bcamf_folder: value, bcamf_ts: Date.now() } );
+			this.model.set( { bcamf_folder: value } );
+			if ( this.options.library ) {
+				B.freshQuery( this.options.library );
+			}
 		}
 	} );
 
@@ -179,7 +203,10 @@
 		this.toolbar.set( 'bcamfFolderFilter', new FolderFilter( {
 			controller: this.controller,
 			model: this.collection.props,
+			library: this.collection,
 			priority: -70
 		} ).render() );
+
+		B.observeUploads( this.collection );
 	};
 }( jQuery, window.wp ) );

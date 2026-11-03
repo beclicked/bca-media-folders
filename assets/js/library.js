@@ -130,11 +130,20 @@
 
 	function applyGridFilter() {
 		var lib = gridLibrary();
-		if ( lib && lib.props ) {
-			lib.props.set( {
-				bcamf_folder: state.current === 0 ? null : state.current,
-				bcamf_ts: Date.now()
-			} );
+		if ( ! lib || ! lib.props ) {
+			return;
+		}
+		// « Tous les médias » : on retire le paramètre (null) pour rendre à WordPress
+		// sa requête d'origine, sans aucun paramètre ajouté.
+		lib.props.set( { bcamf_folder: state.current === 0 ? null : state.current } );
+		freshQuery( lib );
+	}
+
+	// Recharge depuis le serveur plutôt que depuis le cache du navigateur
+	// (un média a pu changer de dossier depuis le dernier affichage).
+	function freshQuery( lib ) {
+		if ( typeof B.freshQuery === 'function' ) {
+			B.freshQuery( lib );
 		}
 	}
 
@@ -806,6 +815,10 @@
 		if ( L.mode === 'grid' ) {
 			whenGrid( function ( lib ) {
 				lib.on( 'remove', refreshSoon );
+				// Vignettes de progression visibles pendant l'envoi, même avec un dossier ouvert.
+				if ( typeof B.observeUploads === 'function' ) {
+					B.observeUploads( lib );
+				}
 			} );
 		}
 	}
