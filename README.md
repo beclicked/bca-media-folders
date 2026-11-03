@@ -44,9 +44,9 @@ Token *fine-grained*, en lecture seule (Contents: Read), limité aux dépôts de
 
 1. Passer la version dans `bca-media-folders.php` (en-tête `Version:` et constante `BCAMF_VERSION`).
 2. Commit et push.
-3. `git tag v1.0.1 && git push origin --tags`
+3. Sur GitHub : **Actions > Release > Run workflow**. (Pousser un tag `v1.0.1` fonctionne aussi.)
 
-Le workflow `.github/workflows/release.yml` vérifie la cohérence des versions, construit `bca-media-folders.zip` et publie la release. Les sites proposent la mise à jour dans les 12 heures, ou immédiatement via Tableau de bord > Mises à jour > Vérifier à nouveau. En SSH : `wp plugin update bca-media-folders`.
+Le workflow `.github/workflows/release.yml` vérifie la cohérence des versions, refuse de republier une version existante, construit `bca-media-folders.zip`, crée le tag et publie la release. Les sites proposent la mise à jour dans les 12 heures, ou immédiatement via Tableau de bord > Mises à jour > Vérifier à nouveau. En SSH : `wp plugin update bca-media-folders`.
 
 ## Recette (à valider sur un site de test)
 
