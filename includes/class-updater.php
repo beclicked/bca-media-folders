@@ -20,6 +20,7 @@ defined( 'ABSPATH' ) || exit;
 final class BCAMF_Updater {
 
 	const SLUG       = 'bca-media-folders';
+	const HOMEPAGE   = 'https://beclicked.agency/bca-media-folders/';
 	const ASSET_NAME = 'bca-media-folders.zip';
 	const CACHE_KEY  = 'bcamf_release';
 	const CACHE_TTL  = 6 * HOUR_IN_SECONDS;
@@ -117,7 +118,7 @@ final class BCAMF_Updater {
 			'id'           => $plugin_data['UpdateURI'] ?? '',
 			'slug'         => self::SLUG,
 			'version'      => $release['version'],
-			'url'          => 'https://beclicked.agency',
+			'url'          => self::HOMEPAGE,
 			'package'      => $release['package'],
 			'requires_php' => '8.0',
 			'tested'       => '7.2',
@@ -154,7 +155,7 @@ final class BCAMF_Updater {
 			'slug'          => self::SLUG,
 			'version'       => $release ? $release['version'] : BCAMF_VERSION,
 			'author'        => '<a href="https://beclicked.agency">Be Clicked Agency</a>',
-			'homepage'      => 'https://beclicked.agency',
+			'homepage'      => self::HOMEPAGE,
 			'requires'      => '6.0',
 			'requires_php'  => '8.0',
 			'last_updated'  => $release ? $release['published'] : '',
@@ -168,11 +169,26 @@ final class BCAMF_Updater {
 	}
 
 	/**
-	 * Ajoute le token aux appels vers ce dépôt uniquement (dépôt privé).
+	 * Requêtes vers ce dépôt uniquement (vérification et téléchargement des mises à jour) :
+	 * identification neutre, et token si le dépôt est privé.
 	 */
 	public static function auth( $args, $url ) {
+		if ( ! is_string( $url ) ) {
+			return $args;
+		}
+
+		$is_api      = 0 === strpos( $url, self::api_base() . '/' );
+		$is_download = 0 === strpos( $url, 'https://github.com/' . BCAMF_REPO . '/' );
+		if ( ! $is_api && ! $is_download ) {
+			return $args;
+		}
+
+		// Par défaut, WordPress envoie l'adresse du site dans son identification.
+		// On la remplace par une identification neutre : GitHub ne sait pas quel site demande.
+		$args['user-agent'] = 'BCA-Media-Folders/' . BCAMF_VERSION;
+
 		$token = self::token();
-		if ( '' === $token || ! is_string( $url ) || 0 !== strpos( $url, self::api_base() . '/' ) ) {
+		if ( '' === $token || ! $is_api ) {
 			return $args;
 		}
 
